@@ -14,3 +14,7 @@ scikit-learn
 
 # DB and data
 pandas
+
+# Other 
+Jupyter notebook
+Seaborn
