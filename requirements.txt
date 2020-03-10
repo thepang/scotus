@@ -4,10 +4,14 @@ black
 flake8
 regex
 
-# Web scraping
+# Web scraping / data stuff
 requests
 beautifulsoup4
 lxml
+tika
+# You need the latest JDK for this to work
+# https://www.oracle.com/java/technologies/javase-downloads.html#javasejdk
+
 
 # Data science
 scikit-learn
