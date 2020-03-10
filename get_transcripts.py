@@ -1,9 +1,10 @@
 import glob
 import os.path
+
 import pandas as pd
-from tika import parser
 import requests
 from bs4 import BeautifulSoup
+from tika import parser
 
 path_to_root = "/Users/pang/repos/scotus"
 
@@ -33,8 +34,10 @@ def download_pdf(case, url):
 
     file_path = f"{path_to_root}/data/003_pdfs/{case}.pdf"
 
-    print(f"Saving PDF to {file_path} from https://www.supremecourt.gov/oral_arguments{url}")
-    with open(file_path, 'wb') as f:
+    print(
+        f"Saving PDF to {file_path} from https://www.supremecourt.gov/oral_arguments{url}"
+    )
+    with open(file_path, "wb") as f:
         f.write(r.content)
     return None
 
@@ -94,13 +97,19 @@ def get_oral_arg_metadata(path):
         for row in soup.findAll("td", attrs={"style": "text-align: left;"}):
 
             # The first span contains the link information and something I'm calling "argument_id"
-            link = row.find("span", attrs={"style": "display:block;width:80px;float:left;"})
-            a = link.find('a', href=True)
+            link = row.find(
+                "span", attrs={"style": "display:block;width:80px;float:left;"}
+            )
+            a = link.find("a", href=True)
             arg_id = a.text.strip()
-            pdf_link = a['href'].strip('..')
+            pdf_link = a["href"].strip("..")
 
             # The second span as the name of the case
-            name = row.find("span", attrs={"style" : "display:block;"}).text.strip().replace("/","")
+            name = (
+                row.find("span", attrs={"style": "display:block;"})
+                .text.strip()
+                .replace("/", "")
+            )
 
             # Append to list as promised
             metadata.append(f"{arg_id} | {name} | {pdf_link}")
@@ -121,7 +130,9 @@ def get_pdfs(path):
      """
 
     for tr_path in glob.glob(f"{path}/data/002_transcript_metadata/*"):
-        metadata = pd.read_csv(tr_path, delimiter='|', header=0, names=['arg_id', 'name', 'pdf_url'])
+        metadata = pd.read_csv(
+            tr_path, delimiter="|", header=0, names=["arg_id", "name", "pdf_url"]
+        )
         for _, row in metadata.iterrows():
             name_of_file = f"{row['arg_id'].strip()}_{row['name'].strip()}"
 
@@ -145,5 +156,5 @@ def get_text_from_df():
 #
 #
 #
-# raw = parser.from_file('/Users/pang/repos/scotus/data/003_pdfs/16-399.pdf')
+raw = parser.from_file("/Users/pang/repos/scotus/data/003_pdfs/16-399.pdf")
 # print(raw['content'])
