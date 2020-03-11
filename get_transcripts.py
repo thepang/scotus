@@ -1,4 +1,5 @@
 import glob
+import json
 import os
 import re
 import time
@@ -8,7 +9,15 @@ import requests
 from bs4 import BeautifulSoup
 from tika import parser
 
-path_to_root = "/Users/pang/repos/scotus"
+ROOT_PATH = "/Users/pang/repos/scotus/data"
+
+# Assumed to be nested under ROOT_PATH
+HTML_FOLDER = "001_html"
+TR_META_FOLDER = "002_transcript_metadata"
+PDF_FOLDER = "003_pdfs"
+PDF_RAW_TXT_FOLDER = "004_pdf_raw"
+CLEAN_TXT_FOLDER = "005_cleaned_text"
+SPEECH_FOLDER = "007_speech"
 
 
 def check_file(file):
@@ -34,7 +43,7 @@ def download_pdf(case, url):
 
     r = requests.get(f"https://www.supremecourt.gov/oral_arguments{url}", stream=True)
 
-    file_path = f"{path_to_root}/data/003_pdfs/{case}.pdf"
+    file_path = f"{ROOT_PATH}/{PDF_FOLDER}/{case}.pdf"
 
     print(
         f"Saving PDF to {file_path} from https://www.supremecourt.gov/oral_arguments{url}"
@@ -55,7 +64,7 @@ def get_transcript_html(year):
     :return: None
     """
 
-    file_to_write = f"{path_to_root}/data/001_html/001_html_{year}.txt"
+    file_to_write = f"{ROOT_PATH}/{HTML_FOLDER}/001_html_{year}.txt"
     if check_file(file_to_write):
         return None
 
@@ -75,24 +84,24 @@ def get_transcript_html(year):
     return None
 
 
-def get_oral_arg_metadata(path):
+def get_oral_arg_metadata():
     """
      Goes through all the files in 001_html and extracts the metadata and saves it into new folder
      :param path: Root path that the 001_html directory is.
      :return: None
      """
-    for txt_path in glob.glob(f"{path}/data/001_html/001_html_*"):
+    for txt_path in glob.glob(f"{ROOT_PATH}/{HTML_FOLDER}/001_html_*"):
         get_year = txt_path.split("_")
         year = get_year[-1].strip(".txt")
 
-        file_to_write = f"{path}/data/002_transcript_metadata/002_tr_meta_{year}.csv"
+        file_to_write = f"{ROOT_PATH}/{TR_META_FOLDER}/002_tr_meta_{year}.csv"
 
         # Check if file exists, if so, skip the whole function.
         if check_file(file_to_write):
             continue
 
         # Open the file for the year and save as soup.
-        with open(f"{path}/data/001_html/001_html_{year}.txt", "r") as file:
+        with open(f"{ROOT_PATH}/{HTML_FOLDER}/001_html_{year}.txt", "r") as file:
             soup = BeautifulSoup(file, "lxml")
 
         # List will be used to write out a csv at end of function
@@ -127,7 +136,7 @@ def get_oral_arg_metadata(path):
     return None
 
 
-def get_pdfs(path):
+def get_pdfs():
     """
      Goes through all the files in 002_transcript_metadata folder and
      downloads all the PDFs found in the pdf_url column
@@ -135,21 +144,21 @@ def get_pdfs(path):
      :return: None
      """
 
-    for tr_path in glob.glob(f"{path}/data/002_transcript_metadata/*"):
+    for tr_path in glob.glob(f"{ROOT_PATH}/{TR_META_FOLDER}/*"):
         metadata = pd.read_csv(
             tr_path, delimiter="|", header=0, names=["arg_id", "name", "pdf_url"]
         )
         for _, row in metadata.iterrows():
             name_of_file = f"{row['arg_id'].strip()}_{row['name'].strip()}"
 
-            if check_file(f"{path}/data/003_pdfs/{name_of_file}.pdf"):
+            if check_file(f"{ROOT_PATH}/{PDF_FOLDER}/{name_of_file}.pdf"):
                 continue
 
             download_pdf(name_of_file, row["pdf_url"].strip())
     return None
 
 
-def get_text_from_pdf(path):
+def get_text_from_pdf():
     """
      Goes through all the files in 003_pdf_raw folder and
      downloads takes text and writes them out
@@ -157,9 +166,11 @@ def get_text_from_pdf(path):
      :return: None
      """
 
-    for pdf_path in glob.glob(f"{path}/data/003_pdfs/*"):
+    for pdf_path in glob.glob(f"{ROOT_PATH}/{PDF_FOLDER}/*"):
         get_pdf_name = pdf_path.split("/")
-        txt_path = f"{path}/data/004_pdf_raw/{get_pdf_name[-1].strip('.pdf')}.txt"
+        txt_path = (
+            f"{ROOT_PATH}/{PDF_RAW_TXT_FOLDER}/{get_pdf_name[-1].strip('.pdf')}.txt"
+        )
         if check_file(txt_path):
             continue
 
@@ -170,19 +181,18 @@ def get_text_from_pdf(path):
     return None
 
 
-def check_transcript(path):
+def check_transcript():
     """
      Some PDFs did not download correctly.
      Check which PDFs did not download correctly so I can try again.
-     :param path: Root path that all the data folders are in.
      :return: None
      """
 
-    for pdf_path in glob.glob(f"{path}/data/004_pdf_raw/*"):
+    for pdf_path in glob.glob(f"{ROOT_PATH}/{PDF_RAW_TXT_FOLDER}/*"):
         check_string = """Access Denied\n\n\nAccess Denied\n\n\n You don't have permission to access"""
         with open(pdf_path, "r") as file:
             if check_string in file.read():
-                orig_pdf = pdf_path.replace("004_pdf_raw", "003_pdfs").replace(
+                orig_pdf = pdf_path.replace(PDF_RAW_TXT_FOLDER, PDF_FOLDER).replace(
                     ".txt", ".pdf"
                 )
                 print(f"Removing original PDF at {orig_pdf}")
@@ -192,18 +202,17 @@ def check_transcript(path):
     return None
 
 
-def scrub_transcript(path):
+def scrub_transcript():
     """
      Clean up to the transcript for use in further analysis.
-     :param path: Root path that all the data folders are in.
      :return: None
      """
 
-    for text_path in glob.glob(f"{path}/data/004_pdf_raw/*"):
+    for text_path in glob.glob(f"{ROOT_PATH}/{PDF_RAW_TXT_FOLDER}/*"):
         file_name = text_path.split("/")[-1]
         all_text = list()
 
-        new_path = f"{path}/data/005_cleaned_text/{file_name}"
+        new_path = f"{ROOT_PATH}/{CLEAN_TXT_FOLDER}/{file_name}"
         if check_file(new_path):
             continue
 
@@ -240,11 +249,59 @@ def scrub_transcript(path):
     return None
 
 
-# for my_year in range(2010,2020):
-#     get_transcript_html(my_year)
-#
-# get_oral_arg_metadata(path_to_root)
-get_pdfs(path_to_root)
-get_text_from_pdf(path_to_root)
-check_transcript(path_to_root)
-scrub_transcript(path_to_root)
+def get_speaker_text():
+    """
+
+     :return: None
+     """
+
+    for text_path in glob.glob(f"{ROOT_PATH}/{CLEAN_TXT_FOLDER}/*"):
+        file_name = text_path.split("/")[-1]
+        new_path = f"{ROOT_PATH}/{SPEECH_FOLDER}/{file_name}"
+
+        if check_file(new_path):
+            continue
+
+        with open(text_path, "r") as file:
+            long_s = file.read().replace("\n", " ")
+
+        # Regex is looking for at least one word in all caps
+        # Possibly followed by a possible period (to match a name like MR. PHILIPS)
+        # Possibly followed by two more words (CHIEF JUSTICE ROBERTS is the only three word name we're interested in)
+        q = re.compile(r"\b[A-Z]+\b\.*.\b[A-Z]*\b *\b[A-Z]*\b:")
+        speech_position = list()
+        d = dict()
+
+        # Creates a list of lists
+        # m.end is when the speech text begins,
+        # m.group()[-1] gives us the speaker without the final colon
+        for m in q.finditer(long_s):
+            speech_position.append([m.end(), m.group()[:-1]])
+
+        # for each item in the row, figures out when the speech ended
+        # using a new search for the next name
+        for position, speaker in speech_position:
+            new_s = long_s[position:]
+            if not q.search(new_s):
+                continue
+
+            end_position = q.search(long_s[position:]).start()
+            speech = new_s[:end_position].strip()
+
+            d[position] = {speaker: speech}
+
+        print(f"Writing to {new_path}")
+        with open(new_path, "w") as file:
+            file.write(json.dumps(d))
+    return None
+
+
+for my_year in range(2010, 2020):
+    get_transcript_html(my_year)
+
+get_oral_arg_metadata()
+get_pdfs()
+get_text_from_pdf()
+check_transcript()
+scrub_transcript()
+get_speaker_text()
