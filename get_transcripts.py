@@ -217,16 +217,20 @@ def scrub_transcript(path):
                     continue
                 elif re.match(r"^ *\d+ *$", line):
                     continue
-                elif "alderson reporting company" in line.lower().strip():
+                elif re.match(r"^Alderson.*", line):
                     continue
                 elif "heritage reporting corporation" in line.lower().strip():
                     continue
                 elif "official - subject to final review" in line.lower().strip():
                     continue
+                elif re.match(r"^Official *$", line):
+                    continue
                 elif re.match(r"^ *\d+ *", line):
                     line = re.sub(r"^ *\d+ *", "", line)
 
-                all_text.append(line)
+                # Replacing soft hyphens with real hyphen, just in case
+                # They look the same but are treated differently
+                all_text.append(line.replace("­", "-"))
             clean_text = "".join(all_text[1:])
 
         print(f"Writing to {new_path}")
@@ -240,7 +244,7 @@ def scrub_transcript(path):
 #     get_transcript_html(my_year)
 #
 # get_oral_arg_metadata(path_to_root)
-# get_pdfs(path_to_root)
-# get_text_from_pdf(path_to_root)
-# check_transcript(path_to_root)
-# scrub_transcript(path_to_root)
+get_pdfs(path_to_root)
+get_text_from_pdf(path_to_root)
+check_transcript(path_to_root)
+scrub_transcript(path_to_root)
