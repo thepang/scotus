@@ -240,4 +240,4 @@ def scrub_transcript(path):
 # get_pdfs(path_to_root)
 # get_text_from_pdf(path_to_root)
 # check_transcript(path_to_root)
-scrub_transcript(path_to_root)
+# scrub_transcript(path_to_root)
