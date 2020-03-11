@@ -1,5 +1,6 @@
 import glob
 import os
+import re
 import time
 
 import pandas as pd
@@ -184,13 +185,50 @@ def check_transcript(path):
                 orig_pdf = pdf_path.replace("004_pdf_raw", "003_pdfs").replace(
                     ".txt", ".pdf"
                 )
-                print(orig_pdf)
-                print(pdf_path)
-
                 print(f"Removing original PDF at {orig_pdf}")
                 os.remove(orig_pdf)
                 print(f"Removing transcript at {pdf_path}")
                 os.remove(pdf_path)
+    return None
+
+
+def scrub_transcript(path):
+    """
+     Clean up to the transcript for use in further analysis.
+     :param path: Root path that all the data folders are in.
+     :return: None
+     """
+
+    for text_path in glob.glob(f"{path}/data/004_pdf_raw/*"):
+        file_name = text_path.split("/")[-1]
+
+        new_path = f"{path}/data/005_cleaned_text/{file_name}"
+        if check_file(new_path):
+            continue
+
+        # Get file and remove rows where:
+        # the line is empty
+        # just numbers (the line counts or page numbers)
+        # is just the text of the reporting company or "subject to final review"
+        with open(text_path, "r") as file:
+            all_text = list()
+            for line in file:
+                if not line.strip():
+                    continue
+                elif re.match(r"^\d+ *$", line):
+                    continue
+                elif "alderson reporting company" in line.lower().strip():
+                    continue
+                elif "heritage reporting corporation" in line.lower().strip():
+                    continue
+                elif "official - subject to final review" in line.lower().strip():
+                    continue
+                all_text.append(line)
+            clean_text = "".join(all_text[1:])
+
+        print(f"Writing to {new_path}")
+        with open(new_path, "w") as file:
+            file.write(clean_text)
 
     return None
 
@@ -202,3 +240,4 @@ def check_transcript(path):
 # get_pdfs(path_to_root)
 # get_text_from_pdf(path_to_root)
 # check_transcript(path_to_root)
+scrub_transcript(path_to_root)
