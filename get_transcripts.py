@@ -201,6 +201,7 @@ def scrub_transcript(path):
 
     for text_path in glob.glob(f"{path}/data/004_pdf_raw/*"):
         file_name = text_path.split("/")[-1]
+        all_text = list()
 
         new_path = f"{path}/data/005_cleaned_text/{file_name}"
         if check_file(new_path):
@@ -211,11 +212,10 @@ def scrub_transcript(path):
         # just numbers (the line counts or page numbers)
         # is just the text of the reporting company or "subject to final review"
         with open(text_path, "r") as file:
-            all_text = list()
             for line in file:
                 if not line.strip():
                     continue
-                elif re.match(r"^\d+ *$", line):
+                elif re.match(r"^ *\d+ *$", line):
                     continue
                 elif "alderson reporting company" in line.lower().strip():
                     continue
@@ -223,6 +223,9 @@ def scrub_transcript(path):
                     continue
                 elif "official - subject to final review" in line.lower().strip():
                     continue
+                elif re.match(r"^ *\d+ *", line):
+                    line = re.sub(r"^ *\d+ *", "", line)
+
                 all_text.append(line)
             clean_text = "".join(all_text[1:])
 
