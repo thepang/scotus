@@ -1,5 +1,6 @@
 import glob
-import os.path
+import os
+import time
 
 import pandas as pd
 import requests
@@ -39,6 +40,9 @@ def download_pdf(case, url):
     )
     with open(file_path, "wb") as f:
         f.write(r.content)
+
+    # I think I got blocked by the site so putting in a sleep.
+    time.sleep(10)
     return None
 
 
@@ -109,6 +113,7 @@ def get_oral_arg_metadata(path):
                 row.find("span", attrs={"style": "display:block;"})
                 .text.strip()
                 .replace("/", "")
+                .strip(".")
             )
 
             # Append to list as promised
@@ -143,8 +148,51 @@ def get_pdfs(path):
     return None
 
 
-def get_text_from_df():
-    return
+def get_text_from_pdf(path):
+    """
+     Goes through all the files in 003_pdf_raw folder and
+     downloads takes text and writes them out
+     :param path: Root path that all the data folders are in.
+     :return: None
+     """
+
+    for pdf_path in glob.glob(f"{path}/data/003_pdfs/*"):
+        get_pdf_name = pdf_path.split("/")
+        txt_path = f"{path}/data/004_pdf_raw/{get_pdf_name[-1].strip('.pdf')}.txt"
+        if check_file(txt_path):
+            continue
+
+        raw = parser.from_file(pdf_path)
+        print(f"Writing pdf text to {txt_path}")
+        with open(txt_path, "w") as file:
+            file.write(raw["content"])
+    return None
+
+
+def check_transcript(path):
+    """
+     Some PDFs did not download correctly.
+     Check which PDFs did not download correctly so I can try again.
+     :param path: Root path that all the data folders are in.
+     :return: None
+     """
+
+    for pdf_path in glob.glob(f"{path}/data/004_pdf_raw/*"):
+        check_string = """Access Denied\n\n\nAccess Denied\n\n\n You don't have permission to access"""
+        with open(pdf_path, "r") as file:
+            if check_string in file.read():
+                orig_pdf = pdf_path.replace("004_pdf_raw", "003_pdfs").replace(
+                    ".txt", ".pdf"
+                )
+                print(orig_pdf)
+                print(pdf_path)
+
+                print(f"Removing original PDF at {orig_pdf}")
+                os.remove(orig_pdf)
+                print(f"Removing transcript at {pdf_path}")
+                os.remove(pdf_path)
+
+    return None
 
 
 # for my_year in range(2010,2020):
@@ -152,9 +200,5 @@ def get_text_from_df():
 #
 # get_oral_arg_metadata(path_to_root)
 # get_pdfs(path_to_root)
-#
-#
-#
-#
-raw = parser.from_file("/Users/pang/repos/scotus/data/003_pdfs/16-399.pdf")
-# print(raw['content'])
+# get_text_from_pdf(path_to_root)
+# check_transcript(path_to_root)
