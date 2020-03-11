@@ -87,7 +87,7 @@ def get_transcript_html(year):
 def get_oral_arg_metadata():
     """
      Goes through all the files in 001_html and extracts the metadata and saves it into new folder
-     :param path: Root path that the 001_html directory is.
+     Skipped if file with name is already found.
      :return: None
      """
     for txt_path in glob.glob(f"{ROOT_PATH}/{HTML_FOLDER}/001_html_*"):
@@ -138,9 +138,9 @@ def get_oral_arg_metadata():
 
 def get_pdfs():
     """
-     Goes through all the files in 002_transcript_metadata folder and
+     Goes through all the files in folder and
      downloads all the PDFs found in the pdf_url column
-     :param path: Root path that the 001_html directory is.
+     Skipped if PDF is found
      :return: None
      """
 
@@ -160,9 +160,8 @@ def get_pdfs():
 
 def get_text_from_pdf():
     """
-     Goes through all the files in 003_pdf_raw folder and
-     downloads takes text and writes them out
-     :param path: Root path that all the data folders are in.
+     Goes through all the files in PDF folder and takes text and writes them out
+     Skipped if output file already exists
      :return: None
      """
 
@@ -183,8 +182,8 @@ def get_text_from_pdf():
 
 def check_transcript():
     """
-     Some PDFs did not download correctly.
-     Check which PDFs did not download correctly so I can try again.
+     Some PDFs did not download correctly by checking for access denied message.
+     Deletes PDF and transcript so upstream functions can run again.
      :return: None
      """
 
@@ -204,7 +203,7 @@ def check_transcript():
 
 def scrub_transcript():
     """
-     Clean up to the transcript for use in further analysis.
+     Scrubs out multiple empty lines, and other issues that could muddy analysis.
      :return: None
      """
 
@@ -251,7 +250,7 @@ def scrub_transcript():
 
 def get_speaker_text():
     """
-
+     Pulls out speaker and speaker's words into "line index : {speaker : words}" dictionaries
      :return: None
      """
 
