@@ -270,7 +270,7 @@ def get_speaker_text():
         # Possibly followed by two more words (CHIEF JUSTICE ROBERTS is the only three word name we're interested in)
         q = re.compile(r"\b[A-Z]+\b\.*.\b[A-Z]*\b *\b[A-Z]*\b:")
         speech_position = list()
-        d = dict()
+        d = list()
 
         # Creates a list of lists
         # m.end is when the speech text begins,
@@ -288,7 +288,7 @@ def get_speaker_text():
             end_position = q.search(long_s[position:]).start()
             speech = new_s[:end_position].strip()
 
-            d[position] = {speaker: speech}
+            d.append((speaker, speech))
 
         print(f"Writing to {new_path}")
         with open(new_path, "w") as file:
@@ -296,12 +296,12 @@ def get_speaker_text():
     return None
 
 
-for my_year in range(2010, 2020):
-    get_transcript_html(my_year)
+# for my_year in range(2010, 2020):
+#     get_transcript_html(my_year)
 
-get_oral_arg_metadata()
-get_pdfs()
-get_text_from_pdf()
-check_transcript()
-scrub_transcript()
+# get_oral_arg_metadata()
+# get_pdfs()
+# get_text_from_pdf()
+# check_transcript()
+# scrub_transcript()
 get_speaker_text()
