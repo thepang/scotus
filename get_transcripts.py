@@ -17,7 +17,7 @@ TR_META_FOLDER = "002_transcript_metadata"
 PDF_FOLDER = "003_pdfs"
 PDF_RAW_TXT_FOLDER = "004_pdf_raw"
 CLEAN_TXT_FOLDER = "005_cleaned_text"
-SPEECH_FOLDER = "007_speech"
+SPEECH_FOLDER = "006_speech"
 
 
 def check_file(file):
@@ -62,6 +62,7 @@ def get_transcript_html(year):
     Does not grab HTML if file already exists in output path
     :param year: Gets transcripts for the year
     :return: None
+    :raises Exception: Page was not accessible
     """
 
     file_to_write = f"{ROOT_PATH}/{HTML_FOLDER}/001_html_{year}.txt"
