@@ -12,6 +12,20 @@ from tika import parser
 import variables as v
 
 
+def get_file_names(path):
+    """
+     Goes to location and finds all files in the folder
+     :param path: Path to check for file
+     :return: list of files
+     """
+
+    files_to_parse = list()
+    for text_path in glob.glob(path):
+        files_to_parse.append(text_path)
+
+    return files_to_parse
+
+
 def check_file(file):
     """
     Checks if given file exists.
@@ -286,20 +300,6 @@ def get_speaker_text():
         with open(new_path, "w") as file:
             file.write(json.dumps(d))
     return None
-
-
-def get_file_names(path):
-    """
-     Goes to location and finds all files in the folder
-     :param path: Path to check for file
-     :return: list of files
-     """
-
-    files_to_parse = list()
-    for text_path in glob.glob(path):
-        files_to_parse.append(text_path)
-
-    return files_to_parse
 
 
 def run_all_the_things():
