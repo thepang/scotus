@@ -20,7 +20,7 @@ def get_file_names(path):
      """
 
     files_to_parse = list()
-    for text_path in glob.glob(path):
+    for text_path in glob.glob(f"{path}/*"):
         files_to_parse.append(text_path)
 
     return files_to_parse
