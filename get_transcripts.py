@@ -296,12 +296,13 @@ def get_speaker_text():
     return None
 
 
-# for my_year in range(2010, 2020):
-#     get_transcript_html(my_year)
+def run_all_the_things():
+    for my_year in range(2010, 2020):
+        get_transcript_html(my_year)
 
-# get_oral_arg_metadata()
-# get_pdfs()
-# get_text_from_pdf()
-# check_transcript()
-# scrub_transcript()
-get_speaker_text()
+    get_oral_arg_metadata()
+    get_pdfs()
+    get_text_from_pdf()
+    check_transcript()
+    scrub_transcript()
+    get_speaker_text()
