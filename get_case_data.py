@@ -3,13 +3,20 @@ import pandas as pd
 import transcript_file_helper as gt
 import variables as v
 
-pd.set_option("display.max_columns", 500)
+pd.set_option("display.max_columns", 25)
+ft_folder = f"{v.ROOT_PATH}/{v.FEATURES_FOLDER}"
 
 # scdb data manually downloaded from http://supremecourtdatabase.org/index.php
 scdb_docket_location = "data/SCDB_2019_01_caseCentered_Docket.csv"
 
 
 def get_case_meta_from_scdb():
+    """
+     Goes to predefined location and finds metadata for cases that are in the speech folder.
+     (Using the file's supreme court docket id to join the two pieces of data)
+     Saves the data in the features folder.
+     :return: None
+     """
     docket_meta = pd.read_csv(scdb_docket_location, encoding="ISO-8859-1")
     file_names = gt.get_file_names(f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}")
 
@@ -68,10 +75,16 @@ def get_case_meta_from_scdb():
         )
     )
 
+    print(f"Saving metadata to {ft_folder}")
+
+    case_meta.to_csv(
+        f"{ft_folder}/raw_features.csv", index=False, quoting=1, quotechar="'"
+    )
+
     return case_meta
 
 
-# Data of the truthe: 'majVotes', 'minVotes', 'partyWinning'
+# Data of the truth: 'majVotes', 'minVotes', 'partyWinning'
 # Update the following to dummy out the top 1-3 or to values
 # petitioner, and respondent, adminAction, certReason, issue, issueArea
 # 'lcDisagreement', 'lcDisposition', 'lcDisposition', lawType
