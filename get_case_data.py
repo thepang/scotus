@@ -3,7 +3,7 @@ import pandas as pd
 import transcript_file_helper as gt
 import variables as v
 
-pd.set_option("display.max_columns", 25)
+pd.set_option("display.max_columns", 40)
 ft_folder = f"{v.ROOT_PATH}/{v.FEATURES_FOLDER}"
 
 # scdb data manually downloaded from http://supremecourtdatabase.org/index.php
@@ -65,6 +65,7 @@ def get_case_meta_from_scdb():
                 "chief",
                 "caseName",
                 # Too sparse. Data will require too many dummy variables.
+                "issue"  # possibly put this back in if I need more features
                 "petitionerState",
                 "adminActionState",
                 "threeJudgeFdc",
@@ -84,15 +85,90 @@ def get_case_meta_from_scdb():
     return case_meta
 
 
-# Data of the truth: 'majVotes', 'minVotes', 'partyWinning'
-# Update the following to dummy out the top 1-3 or to values
-# petitioner, and respondent, adminAction, certReason, issue, issueArea
-# 'lcDisagreement', 'lcDisposition', 'lcDisposition', lawType
-# Change petitionerState to just track if the case is from California, and respondentState to track if from TX
-# Change Jurisdiction to b e a bool, only two values anyways
-# caseOrigin/caseSource might be redundant with other columns. start with it only using the top few dummied out
+def clean_meta():
+    """
+     Open the predetermined raw_features folder and does all the cleaning for analysis in Jupyter
+     :return: None
+     """
+    import_df = pd.read_csv(
+        f"{ft_folder}/raw_features.csv", quotechar="'", parse_dates=[1, 4, 5]
+    )
 
-cases = get_case_meta_from_scdb()
-# print(cases)
-variable = "lawMinor"
-print(cases)
+    # Remove the duplicate row for 15-1498
+
+    to_dummy = {
+        "petitioner": 6,
+        "respondent": 3,
+        "respondentState": 1,  # This is California, maybe rename to is_CA?
+        "jurisdiction": 1,  # 1=cert, 2=appeal change to is_Cert?
+        "adminAction": 2,  # 117=stateagency, 7=board of immigration appeals
+        "caseOrigin": 1,  # for now, possibly look into grouping them another way later
+        "caseSource": 1,  # for now, possibly look into grouping them another way later
+        "caseSourceState": 1,  # 6=California
+        "certReason": 3,
+        "lcDisposition": 2,
+        "lcDispositionDirection": 2,
+        "issueArea": 3,
+        "lawType": 3,
+        "issue": 1,
+    }
+
+    for column in to_dummy:
+        import_df = dummy_variables(column, import_df, to_dummy[column])
+
+    import_df["dateRearg"] = [
+        0 if str(item) == "NaT" else 1 for item in import_df.pop("dateRearg")
+    ]
+
+    return import_df.fillna(0)
+
+
+def dummy_variables(column_name, df, limit=3):
+    """
+     Goes to predefined location and finds metadata for cases that are in the speech folder.
+     (Using the file's supreme court docket id to join the two pieces of data)
+     Saves the data in the features folder.
+     returns df with updated dummy variables
+     :param column_name: name of column to dummy
+     :param df: df to update with dummy variables
+     :param limit: by default, limits to the top three values to dummy, otherwise, provide an integer
+     :return: df with column_name column removed and new dummies added
+     """
+
+    column_to_dummy = df.pop(column_name)
+    dummies = pd.get_dummies(column_to_dummy, prefix=column_name)
+
+    keep_columns = column_to_dummy.value_counts().index[:limit]
+    columns_to_keep = [f"{column_name}_{item}" for item in keep_columns]
+
+    to_add = dummies.filter(items=columns_to_keep)
+
+    df = df.join(to_add)
+
+    return df
+
+
+def save_to_csv(df):
+    columns = df.columns.tolist()
+    [
+        columns.remove(item)
+        for item in ["docket", "partyWinning", "majVotes", "minVotes"]
+    ]
+    dedupe_df = df.drop_duplicates(keep="first")
+    # docket 15-1498 had two oral arguments, kinda making sure the dedupe only drops the one copy
+    expected_count = 617
+    if len(dedupe_df) != 617:
+        print(
+            f"Unexpected count of items. Expected {expected_count}, but found {len(dedupe_df)}"
+        )
+    # If possible, can add ['majVotes', 'minVotes'] back in, for now just focus on the 1, 0
+    dedupe_df[["docket", "partyWinning"] + columns].to_csv(
+        f"{ft_folder}/for_analysis.csv", index=False
+    )
+    # print(dedupe_df[['docket', 'partyWinning', 'majVotes', 'minVotes'] + columns])
+    return None
+
+
+# get_case_meta_from_scdb()
+df = clean_meta()
+save_to_csv(df)
