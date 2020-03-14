@@ -88,7 +88,9 @@ def get_case_meta_from_scdb():
 def clean_meta():
     """
      Open the predetermined raw_features folder and does all the cleaning for analysis in Jupyter
-     :return: None
+     Dummies out columns as defined by to_dummy variable.
+     Fills in nulls.
+     :return: dataframe
      """
     import_df = pd.read_csv(
         f"{ft_folder}/raw_features.csv", quotechar="'", parse_dates=[1, 4, 5]
@@ -148,24 +150,65 @@ def dummy_variables(column_name, df, limit=3):
     return df
 
 
+def remove_validate_data(df):
+    """
+     Removes all rows where the decision came out in 2019 to save for validate.
+     :param df: df to update remove rows
+     :return: x_df for analysis and y_df for validating later on
+     """
+
+    df["dateDecision"] = pd.DataFrame(df["dateDecision"])
+
+    x_df = df[df["dateDecision"] < "2019-01-01"]
+    y_df = df[df["dateDecision"] >= "2019-01-01"]
+
+    return x_df, y_df
+
+
+def remove_duplicates(df):
+    """
+     Takes the df and uses Panda functionality and removes duplicate.
+     Docket 15-1498 had two oral arguments, kinda making sure the dedupe only drops the one copy
+     :param df: df to drop dupes
+     :return: df dupes gone
+     :raises Exception: when more than one row is removed
+     """
+    dedupe_df = df.drop_duplicates(keep="first")
+
+    expected_count = 617
+    if len(dedupe_df) != 617:
+        raise Exception(
+            f"Unexpected count of items. Expected {expected_count}, but found {len(dedupe_df)}"
+        )
+
+    return dedupe_df
+
+
 def save_to_csv(df):
+    """
+     Reorders the columns
+     :param column_name: name of column to dummy
+     :param df: df to update with dummy variables
+     :param limit: by default, limits to the top three values to dummy, otherwise, provide an integer
+     :return: None
+     """
     columns = df.columns.tolist()
     [
         columns.remove(item)
-        for item in ["docket", "partyWinning", "majVotes", "minVotes"]
+        for item in ["docket", "partyWinning", "majVotes", "minVotes", "dateRearg"]
     ]
-    dedupe_df = df.drop_duplicates(keep="first")
-    # docket 15-1498 had two oral arguments, kinda making sure the dedupe only drops the one copy
-    expected_count = 617
-    if len(dedupe_df) != 617:
-        print(
-            f"Unexpected count of items. Expected {expected_count}, but found {len(dedupe_df)}"
-        )
+
+    dedupe_df = remove_duplicates(df)
+
     # If possible, can add ['majVotes', 'minVotes'] back in, for now just focus on the 1, 0
-    dedupe_df[["docket", "partyWinning"] + columns].to_csv(
-        f"{ft_folder}/for_analysis.csv", index=False
+    x_df, y_df = remove_validate_data(
+        pd.DataFrame(dedupe_df[["docket", "partyWinning"] + columns])
     )
-    # print(dedupe_df[['docket', 'partyWinning', 'majVotes', 'minVotes'] + columns])
+
+    x_df.to_csv(f"{ft_folder}/for_analysis.csv", index=False)
+
+    y_df.to_csv(f"{ft_folder}/validation_data.csv", index=False)
+
     return None
 
 
