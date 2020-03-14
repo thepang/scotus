@@ -22,3 +22,6 @@ pandas
 # Other 
 Jupyter notebook
 Seaborn
+
+# Optional
+jupyter_contrib_nbextensions
