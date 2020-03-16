@@ -320,6 +320,3 @@ def run_all_the_things():
     check_transcript()
     scrub_transcript()
     get_speaker_text()
-
-
-run_all_the_things()
