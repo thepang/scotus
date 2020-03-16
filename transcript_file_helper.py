@@ -257,7 +257,8 @@ def scrub_transcript():
 
 def get_speaker_text():
     """
-     Pulls out speaker and speaker's words into "line index : {speaker : words}" dictionaries
+     Pulls out speaker and speaker's words into a list of lists.
+     Each entry is: [speaker, petitioner/respondent, text]
      :return: None
      """
 
@@ -288,13 +289,20 @@ def get_speaker_text():
         # using a new search for the next name
         for position, speaker in speech_position:
             new_s = long_s[position:]
+
+            # Set party to respondent by default and update to petitioner if it finds that the text below is found.
+            # If "Behalf of the respondents" text is ahead, that means we're still in the petitioner section.
+            party = "respondent"
+            if "BEHALF OF THE RESPONDENTS" in long_s[position:]:
+                party = "petitioner"
+
             if not q.search(new_s):
                 continue
 
             end_position = q.search(long_s[position:]).start()
             speech = new_s[:end_position].strip()
 
-            d.append((speaker, speech))
+            d.append((speaker, party, speech))
 
         print(f"Writing to {new_path}")
         with open(new_path, "w") as file:
@@ -312,3 +320,6 @@ def run_all_the_things():
     check_transcript()
     scrub_transcript()
     get_speaker_text()
+
+
+run_all_the_things()
