@@ -290,11 +290,17 @@ def get_speaker_text():
         for position, speaker in speech_position:
             new_s = long_s[position:]
 
-            # Set party to respondent by default and update to petitioner if it finds that the text below is found.
             # If "Behalf of the respondents" text is ahead, that means we're still in the petitioner section.
-            party = "respondent"
             if "BEHALF OF THE RESPONDENTS" in long_s[position:]:
                 party = "petitioner"
+            else:
+                party = "respondent"
+
+            # If name has 'Justice' in it, it's one of the judges
+            if "JUSTICE" in speaker:
+                speaker_type = "judge"
+            else:
+                speaker_type = "lawyer"
 
             if not q.search(new_s):
                 continue
@@ -302,7 +308,7 @@ def get_speaker_text():
             end_position = q.search(long_s[position:]).start()
             speech = new_s[:end_position].strip()
 
-            d.append((speaker, party, speech))
+            d.append((party, speaker_type, speaker, speech))
 
         print(f"Writing to {new_path}")
         with open(new_path, "w") as file:
