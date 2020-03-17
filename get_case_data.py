@@ -205,6 +205,11 @@ def save_to_csv(df):
         pd.DataFrame(dedupe_df[["docket", "partyWinning"] + columns])
     )
 
+    for metadata_csv in ["num_speak_data.csv"]:
+        df = pd.read_csv(f"{ft_folder}/{metadata_csv}", index_col="docket")
+        x_df = x_df.join(df, on="docket")
+        print(x_df)
+
     x_df.to_csv(f"{ft_folder}/for_analysis.csv", index=False)
 
     y_df.to_csv(f"{ft_folder}/validation_data.csv", index=False)

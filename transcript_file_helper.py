@@ -1,5 +1,5 @@
+import csv
 import glob
-import json
 import os
 import re
 import time
@@ -33,7 +33,7 @@ def check_file(file):
     :return: True if file found, False if file not found
     """
     if os.path.isfile(file):
-        print(f"Found {file}. Skipping")
+        # print(f"Found {file}. Skipping")
         return True
     else:
         False
@@ -227,16 +227,25 @@ def scrub_transcript():
         # just numbers (the line counts or page numbers)
         # is just the text of the reporting company or "subject to final review"
         with open(text_path, "r") as file:
+            bad_file = "15-927_SCA Hygiene Products Aktiebolag v. First Quality Baby Products, LLC.txt"
             for line in file:
+                line = re.sub(r"\s+", " ", line)
                 if not line.strip():
                     continue
+                elif (
+                    "16 ON BEHALF OF THE PETITIONERS".strip() in line
+                    and text_path == f"{v.ROOT_PATH}/{v.PDF_RAW_TXT_FOLDER}/{bad_file}"
+                ):
+                    line = "16 ON BEHALF OF THE RESPONDENTS "
                 elif re.match(r"^ *\d+ *$", line):
                     continue
                 elif re.match(r"^Alderson.*", line):
                     continue
                 elif "heritage reporting corporation" in line.lower().strip():
                     continue
-                elif "official - subject to final review" in line.lower().strip():
+                elif re.match(r"Subject.to.Final.Review", line):
+                    continue
+                elif re.match(r"^Official ­.*", line):
                     continue
                 elif re.match(r"^Official *$", line):
                     continue
@@ -261,58 +270,120 @@ def get_speaker_text():
      Each entry is: [speaker, petitioner/respondent, text]
      :return: None
      """
+    # for thing in glob.glob(f"{v.ROOT_PATH}/{v.CLEAN_TXT_FOLDER}/*"):
+    #     print(thing)
 
     for text_path in glob.glob(f"{v.ROOT_PATH}/{v.CLEAN_TXT_FOLDER}/*"):
         file_name = text_path.split("/")[-1]
         new_path = f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}/{file_name}"
+        new_path = new_path.replace(".txt", ".csv")
 
         if check_file(new_path):
             continue
 
         with open(text_path, "r") as file:
-            long_s = file.read().replace("\n", " ")
+            long_s = file.read()
 
-        # Regex is looking for at least one word in all caps
-        # Possibly followed by a possible period (to match a name like MR. PHILIPS)
-        # Possibly followed by two more words (CHIEF JUSTICE ROBERTS is the only three word name we're interested in)
-        q = re.compile(r"\b[A-Z]+\b\.*.\b[A-Z]*\b *\b[A-Z]*\b:")
-        speech_position = list()
+        to_parse = long_s
         d = list()
+        argument_section_query = re.compile(
+            r"ARGUMENT\s+OF\s*[A-Z\s.,-c']*\s+ON\s*BEHALF\s*OF\s"
+        )
+        argument_section_query_2 = re.compile(
+            r"ORAL\sARGUMENT\s+OF\s*[A-Z\s.,]*\s+FOR\s"
+        )
+        bad_file = "15-6418_Welch v. United States.txt"
+        if text_path.strip() == f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}/{bad_file}":
+            argument_section_query_2 = re.compile(r"ORAL\sARGUMENT\sOF\s[A-Z.\s]+THE\s")
 
-        # Creates a list of lists
-        # m.end is when the speech text begins,
-        # m.group()[-1] gives us the speaker without the final colon
-        for m in q.finditer(long_s):
-            speech_position.append([m.end(), m.group()[:-1]])
+        end = list()
+        for num in argument_section_query.finditer(long_s):
+            end.append(num.end())
+        end.append(len(long_s))
 
-        # for each item in the row, figures out when the speech ended
-        # using a new search for the next name
-        for position, speaker in speech_position:
-            new_s = long_s[position:]
+        if len(end) <= 1:
+            end = list()
+            for num in argument_section_query_2.finditer(long_s):
+                end.append(num.end())
+            end.append(len(long_s))
+            argument_section_query = argument_section_query_2
 
-            # If "Behalf of the respondents" text is ahead, that means we're still in the petitioner section.
-            if "BEHALF OF THE RESPONDENTS" in long_s[position:]:
+        end = end[1:]
+
+        for m in argument_section_query.finditer(long_s):
+            if "PETITIONER" in long_s[m.end() : m.end() + 100]:
                 party = "petitioner"
-            else:
+            elif "RESPONDENT" in long_s[m.end() : m.end() + 100]:
                 party = "respondent"
-
-            # If name has 'Justice' in it, it's one of the judges
-            if "JUSTICE" in speaker:
-                speaker_type = "judge"
             else:
-                speaker_type = "lawyer"
-
-            if not q.search(new_s):
+                end = end[1:]
                 continue
 
-            end_position = q.search(long_s[position:]).start()
-            speech = new_s[:end_position].strip()
+            # Regex is looking for at least one word in all caps
+            # Possibly followed by a possible period (to match a name like MR. PHILIPS)
+            # Possibly followed by two more words (CHIEF JUSTICE ROBERTS is the only three word name we're interested in)
+            q = re.compile(r"\b[A-Z]+\b\.*.\b[A-Zc]*\b *\b[A-Z]*\b:")
+            speech_position = list()
 
-            d.append((party, speaker_type, speaker, speech))
+            to_parse = long_s[m.end() : end[0]]
 
-        print(f"Writing to {new_path}")
-        with open(new_path, "w") as file:
-            file.write(json.dumps(d))
+            # Creates a list of lists
+            # m.end is when the speech text begins,
+            # m.group()[-1] gives us the speaker without the final colon
+            for n in q.finditer(to_parse):
+                speech_position.append([n.end(), n.group()[:-1]])
+
+            # for each item in the row, figures out when the speech ended
+            # using a new search for the next name
+            for position, speaker in speech_position:
+                new_s = to_parse[position:]
+
+                # If name has 'Justice' in it, it's one of the judges
+                if "JUSTICE" in speaker:
+                    speaker_type = "judge"
+                else:
+                    speaker_type = "lawyer"
+
+                if not q.search(new_s):
+                    continue
+
+                end_position = q.search(to_parse[position:]).start()
+                speech = new_s[:end_position].strip()
+
+                d.append((party, speaker_type, speaker, speech))
+
+            end = end[1:]
+        try:
+            print(f"Writing to {new_path}")
+            df = pd.DataFrame(d)
+            df.to_csv(
+                new_path,
+                header=["party", "speaker_type", "speaker", "text"],
+                quoting=csv.QUOTE_ALL,
+                index=False,
+            )
+        except ValueError:
+            print(f"Couldn't do it man: {text_path}")
+    return None
+
+
+def delete_empty_files(path):
+    """
+     Delete empty files from the given path
+     :return: None
+     """
+
+    deleted_files = []
+
+    for text_file in glob.glob(f"{path}/*"):
+        with open(text_file, "r") as file:
+            text = file.read()
+            if text.strip() == "":
+                deleted_files.append(text_file)
+                os.remove(f"{text_file}")
+
+    print(f"Deleted {len(deleted_files)} files: {deleted_files}")
+
     return None
 
 
@@ -326,3 +397,7 @@ def run_all_the_things():
     check_transcript()
     scrub_transcript()
     get_speaker_text()
+    delete_empty_files(f"/Users/pang/repos/scotus/data/006_speech")
+
+
+run_all_the_things()
