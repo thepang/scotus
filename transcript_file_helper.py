@@ -400,4 +400,4 @@ def run_all_the_things():
     delete_empty_files(f"/Users/pang/repos/scotus/data/006_speech")
 
 
-run_all_the_things()
+# run_all_the_things()

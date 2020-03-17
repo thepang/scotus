@@ -205,7 +205,7 @@ def save_to_csv(df):
         pd.DataFrame(dedupe_df[["docket", "partyWinning"] + columns])
     )
 
-    for metadata_csv in ["num_speak_data.csv"]:
+    for metadata_csv in ["num_speak_data.csv", "interruption_data.csv"]:
         df = pd.read_csv(f"{ft_folder}/{metadata_csv}", index_col="docket")
         x_df = x_df.join(df, on="docket")
         print(x_df)
