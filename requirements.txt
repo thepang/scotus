@@ -16,6 +16,7 @@ tika
 # Data science
 scikit-learn
 xgboost
+vaderSentiment
 
 # DB and data
 pandas

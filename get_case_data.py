@@ -96,23 +96,13 @@ def clean_meta():
         f"{ft_folder}/raw_features.csv", quotechar="'", parse_dates=[1, 4, 5]
     )
 
-    # Remove the duplicate row for 15-1498
-
     to_dummy = {
-        "petitioner": 6,
-        "respondent": 3,
-        "respondentState": 1,  # This is California, maybe rename to is_CA?
-        "jurisdiction": 1,  # 1=cert, 2=appeal change to is_Cert?
-        "adminAction": 2,  # 117=stateagency, 7=board of immigration appeals
-        "caseOrigin": 1,  # for now, possibly look into grouping them another way later
         "caseSource": 1,  # for now, possibly look into grouping them another way later
-        "caseSourceState": 1,  # 6=California
         "certReason": 3,
         "lcDisposition": 2,
         "lcDispositionDirection": 2,
         "issueArea": 3,
         "lawType": 3,
-        "issue": 1,
     }
 
     for column in to_dummy:
@@ -122,7 +112,19 @@ def clean_meta():
         0 if str(item) == "NaT" else 1 for item in import_df.pop("dateRearg")
     ]
 
-    return import_df.fillna(0)
+    return import_df.fillna(0).drop(
+        columns=[
+            "jurisdiction",
+            "petitioner",
+            "issue",
+            "caseOrigin",
+            "respondent",
+            "naturalCourt",
+            "adminAction",
+            "respondentState",
+            "caseSourceState",
+        ]
+    )
 
 
 def dummy_variables(column_name, df, limit=3):
@@ -198,6 +200,7 @@ def save_to_csv(df):
         for item in ["docket", "partyWinning", "majVotes", "minVotes", "dateRearg"]
     ]
 
+    # Remove the duplicate row for 15-1498
     dedupe_df = remove_duplicates(df)
 
     # If possible, can add ['majVotes', 'minVotes'] back in, for now just focus on the 1, 0
@@ -205,10 +208,13 @@ def save_to_csv(df):
         pd.DataFrame(dedupe_df[["docket", "partyWinning"] + columns])
     )
 
-    for metadata_csv in ["num_speak_data.csv", "interruption_data.csv"]:
+    for metadata_csv in [
+        "num_speak_data.csv",
+        "interruption_data.csv",
+        "sentiment_data.csv",
+    ]:
         df = pd.read_csv(f"{ft_folder}/{metadata_csv}", index_col="docket")
         x_df = x_df.join(df, on="docket")
-        print(x_df)
 
     x_df.to_csv(f"{ft_folder}/for_analysis.csv", index=False)
 

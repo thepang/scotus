@@ -2,6 +2,7 @@ import glob
 
 import numpy as np
 import pandas as pd
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 import variables as v
 
@@ -145,4 +146,102 @@ def num_interruptions():
     return None
 
 
-num_interruptions()
+def get_sentiment(df):
+    analyzer = SentimentIntensityAnalyzer()
+
+    columns = ["neg", "pos", "neu", "compound"]
+
+    for name in columns:
+        df[name] = 0
+
+    for index, row in df.iterrows():
+        try:
+            vs = analyzer.polarity_scores(row["text"])
+            for score in columns:
+                df.loc[index, score] = vs[score]
+        except AttributeError:
+            pass
+
+    df = df.groupby(by=["party", "speaker_type"]).mean().reset_index()
+    sentiments = list()
+
+    for name in columns:
+        for item in df[name].values:
+            sentiments.append(item)
+
+    return sentiments
+
+
+def sentiment_scores():
+    files = get_list_of_cases()
+    to_df = []
+
+    for file in files:
+        if file in problem_files:
+            continue
+
+        scores = get_sentiment(pd.read_csv(file))
+        temp_ = [file.split("/")[-1].split("_")[0]]
+
+        [temp_.append(item) for item in scores]
+        to_df.append(temp_)
+    df = pd.DataFrame(
+        to_df,
+        columns=[
+            "docket",
+            "pj_sent_neg",
+            "pl_sent_neg",
+            "rj_sent_neg",
+            "rl_sent_neg",
+            "pj_sent_pos",
+            "pl_sent_pos",
+            "rj_sent_pos",
+            "rl_sent_pos",
+            "pj_sent_neu",
+            "pl_sent_neu",
+            "rj_sent_neu",
+            "rl_sent_neu",
+            "pj_sent_compound",
+            "pl_sent_compound",
+            "rj_sent_compound",
+            "rl_sent_compound",
+        ],
+    )
+
+    df.to_csv(f"{v.ROOT_PATH}/{v.FEATURES_FOLDER}/sentiment_data.csv", index=False)
+    return None
+
+
+# def sentiment_scores():
+#     files = get_list_of_cases()
+#     to_df = []
+#     for file in files:
+#         if file in problem_files:
+#             continue
+#
+#         if file == "/Users/pang/repos/scotus/data/006_speech/14-1132_Merrill Lynch, Pierce, Fenner & Smith Inc. v. Manning.csv":
+#             scores = get_sentiment(pd.read_csv(file))
+#
+#             thing = [file.split("/")[-1].split("_")[0]]
+#             [thing.append(item) for item in scores]
+#
+#         df = pd.DataFrame(
+#             to_df,
+#             columns=[
+#                 "docket",
+#                 "",
+#                 "",
+#                 "",
+#                 "",
+#                 "",
+#                 "",
+#             ],
+#         )
+#
+#     df.to_csv(f"{v.ROOT_PATH}/{v.FEATURES_FOLDER}/sentiment_data.csv", index=False)
+#     return None
+
+
+# num_speak_data()
+# num_interruptions()
+sentiment_scores()
