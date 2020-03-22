@@ -212,9 +212,13 @@ def save_to_csv(df):
         "num_speak_data.csv",
         "interruption_data.csv",
         "sentiment_data.csv",
+        "num_word_count_data.csv",
+        "short_exchange_count.csv",
+        "full_stutter_count.csv",
     ]:
         df = pd.read_csv(f"{ft_folder}/{metadata_csv}", index_col="docket")
         x_df = x_df.join(df, on="docket")
+        y_df = y_df.join(df, on="docket")
 
     x_df.to_csv(f"{ft_folder}/for_analysis.csv", index=False)
 
@@ -224,5 +228,5 @@ def save_to_csv(df):
 
 
 # get_case_meta_from_scdb()
-df = clean_meta()
-save_to_csv(df)
+# df = clean_meta()
+# save_to_csv(df)

@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from tika import parser
 
+import feature_engineering as fe
 import variables as v
 
 
@@ -387,6 +388,53 @@ def delete_empty_files(path):
     return None
 
 
+def transcript_for_nlp():
+    columns = ["docket", "party", "speaker_type", "speaker", "text"]
+    df = pd.DataFrame(columns=columns)
+    for text_path in glob.glob(f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}/*"):
+        file_name = text_path.split("/")[-1]
+        docket = file_name.split("_")[0]
+
+        text = pd.read_csv(text_path)
+        text["docket"] = docket
+        text = text.filter(items=columns)
+
+        df = df.append(text, ignore_index=False)
+    df.to_csv(
+        f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}/000_all.csv",
+        index=False,
+        quoting=csv.QUOTE_ALL,
+    )
+    return None
+
+
+def sum_text():
+    cases = fe.get_list_of_cases()
+    new = pd.DataFrame()
+
+    for case in cases:
+        print(f"Processing {case}")
+        to_append = [case.split("/")[-1].split("_")[0]]
+        df = pd.read_csv(case)
+        df = df.dropna()
+        df = (
+            df.groupby(by=["party", "speaker_type"])
+            .sum()
+            .reset_index()
+            .sort_values(by=["party", "speaker_type"])
+        )
+
+        [to_append.append(item) for item in list(df["text"])]
+        row = pd.DataFrame(to_append)
+        new = new.append(row.T)
+
+    new.to_csv(
+        f"{v.ROOT_PATH}/{v.FEATURES_FOLDER}/words.csv",
+        index=False,
+        header=["docket", "pj_text", "pl_text", "rj_text", "rl_text"],
+    )
+
+
 def run_all_the_things():
     for my_year in range(2010, 2020):
         get_transcript_html(my_year)
@@ -397,7 +445,9 @@ def run_all_the_things():
     check_transcript()
     scrub_transcript()
     get_speaker_text()
-    delete_empty_files(f"/Users/pang/repos/scotus/data/006_speech")
+    delete_empty_files(f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}")
 
 
 # run_all_the_things()
+# transcript_for_nlp()
+# sum_text()
