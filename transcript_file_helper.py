@@ -275,6 +275,14 @@ def get_speaker_text():
     #     print(thing)
 
     for text_path in glob.glob(f"{v.ROOT_PATH}/{v.CLEAN_TXT_FOLDER}/*"):
+        if (
+            text_path
+            == "/Users/pang/repos/scotus/data/005_cleaned_text/17-387_Upper Skagit Tribe v. Lundgren.txt"
+        ):
+            thing_of_note = True
+        else:
+            thing_of_note = False
+
         file_name = text_path.split("/")[-1]
         new_path = f"{v.ROOT_PATH}/{v.SPEECH_FOLDER}/{file_name}"
         new_path = new_path.replace(".txt", ".csv")
@@ -288,7 +296,7 @@ def get_speaker_text():
         to_parse = long_s
         d = list()
         argument_section_query = re.compile(
-            r"ARGUMENT\s+OF\s*[A-Z\s.,-c']*\s+ON\s*BEHALF\s*OF\s"
+            r"ORAL\sARGUMENT\s+[A-Z\s.,-c']*\s+ON\s*BEHALF\s*OF\s"
         )
         argument_section_query_2 = re.compile(
             r"ORAL\sARGUMENT\s+OF\s*[A-Z\s.,]*\s+FOR\s"
@@ -312,6 +320,8 @@ def get_speaker_text():
         end = end[1:]
 
         for m in argument_section_query.finditer(long_s):
+            if thing_of_note:
+                print(long_s[m.end() : m.end() + 100])
             if "PETITIONER" in long_s[m.end() : m.end() + 100]:
                 party = "petitioner"
             elif "RESPONDENT" in long_s[m.end() : m.end() + 100]:
@@ -436,7 +446,7 @@ def sum_text():
 
 
 def run_all_the_things():
-    for my_year in range(2010, 2020):
+    for my_year in range(2000, 2020):
         get_transcript_html(my_year)
 
     get_oral_arg_metadata()

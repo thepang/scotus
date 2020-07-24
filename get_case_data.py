@@ -7,7 +7,7 @@ pd.set_option("display.max_columns", 40)
 ft_folder = f"{v.ROOT_PATH}/{v.FEATURES_FOLDER}"
 
 # scdb data manually downloaded from http://supremecourtdatabase.org/index.php
-scdb_docket_location = "data/SCDB_2019_01_caseCentered_Docket.csv"
+scdb_docket_location = "data/000_SCDB/SCDB_2019_01_caseCentered_Docket.csv"
 
 
 def get_case_meta_from_scdb():
@@ -65,7 +65,7 @@ def get_case_meta_from_scdb():
                 "chief",
                 "caseName",
                 # Too sparse. Data will require too many dummy variables.
-                "issue"  # possibly put this back in if I need more features
+                # "issue",  # possibly put this back in if I need more features
                 "petitionerState",
                 "adminActionState",
                 "threeJudgeFdc",
@@ -177,11 +177,11 @@ def remove_duplicates(df):
      """
     dedupe_df = df.drop_duplicates(keep="first")
 
-    expected_count = 617
-    if len(dedupe_df) != 617:
-        raise Exception(
-            f"Unexpected count of items. Expected {expected_count}, but found {len(dedupe_df)}"
-        )
+    # expected_count = 617
+    # if len(dedupe_df) != 617:
+    #     raise Exception(
+    #         f"Unexpected count of items. Expected {expected_count}, but found {len(dedupe_df)}"
+    #     )
 
     return dedupe_df
 
@@ -227,6 +227,6 @@ def save_to_csv(df):
     return None
 
 
-# get_case_meta_from_scdb()
-# df = clean_meta()
-# save_to_csv(df)
+get_case_meta_from_scdb()
+df = clean_meta()
+save_to_csv(df)
