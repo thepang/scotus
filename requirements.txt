@@ -1,29 +1,29 @@
 # Basic requirements for all
-pre-commit 
-black
-flake8
-regex
+pre-commit==2.1.0
+black==19.10b0
+flake8==3.7.9
+regex==2020.2.20
 
-# Web scraping / data stuff
-requests
-beautifulsoup4
-lxml
-tika
+# Web scraping / Parsing PDF
+requests==2.22.0
+beautifulsoup4==4.8.2
+lxml==4.5.0
+tika==1.23.1
 # You need the latest JDK for this to work
 # https://www.oracle.com/java/technologies/javase-downloads.html#javasejdk
 
-
 # Data science
-scikit-learn
+scikit-learn==0.22.1
 xgboost
-vaderSentiment
+vaderSentiment==3.2.1
 
 # DB and data
-pandas
+pandas==1.0.1
+numpy==1.18.1
 
-# Other 
-Jupyter
-Seaborn
-
-# Optional
-jupyter_contrib_nbextensions
+# Visualizations and etc.
+jupyter==1.0.0
+jupyter-core==4.6.3
+jupyter-contrib-nbextensions==0.5.1
+matplotlib==3.2.0
+seaborn==0.10.0
