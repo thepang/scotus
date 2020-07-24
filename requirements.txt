@@ -22,7 +22,7 @@ vaderSentiment
 pandas
 
 # Other 
-Jupyter notebook
+Jupyter
 Seaborn
 
 # Optional
